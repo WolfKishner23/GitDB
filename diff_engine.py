@@ -145,7 +145,7 @@ def get_full_patch(c1, c2):
     d_diff = diff_data(json.loads(c1.data_snapshot), json.loads(c2.data_snapshot), recreated)
     return s_diff, d_diff
 
-def gitdb_diff(commit1_hash, commit2_hash, repo_path):
+def gitdb_diff(commit1_hash, commit2_hash, repo_path, schema_only=False, data_only=False):
     """Loads two commits, runs the schema diff and data diff, and prints the resulting SQL."""
     gitdb_dir = os.path.join(os.path.dirname(os.path.abspath(repo_path)), ".gitdb")
     commits_dir = os.path.join(gitdb_dir, "commits")
@@ -160,12 +160,19 @@ def gitdb_diff(commit1_hash, commit2_hash, repo_path):
     
     s_diff, d_diff = get_full_patch(c1, c2)
     
-    print(f"-- Diff between {commit1_hash} and {commit2_hash}")
-    for s in s_diff:
-        print(s)
-    for s, params in d_diff:
-        p_str = ", ".join([repr(p) for p in params])
-        print(f"{s} -- Params: {p_str}")
+    print(f"-- Diff between {commit1_hash[:8]} and {commit2_hash[:8]}")
+    
+    if not data_only:
+        for s in s_diff:
+            print(s)
+            
+    if not schema_only:
+        for s, params in d_diff:
+            if params:
+                p_str = ", ".join([repr(p) for p in params])
+                print(f"{s} -- Params: {p_str}")
+            else:
+                print(s)
     
     return s_diff, d_diff
 

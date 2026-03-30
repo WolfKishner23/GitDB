@@ -1,0 +1,9 @@
+click
+rich
+python-dotenv
+sqlglot
+flask
+flask-marshmallow
+marshmallow-sqlalchemy
+flask-cors
+marshmallow

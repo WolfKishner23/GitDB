@@ -50,18 +50,8 @@ def commit(message, author):
             console.print(f"[red]Error: Database file '{path}' not found.[/red]")
             return
 
-        # 1. Check for primary keys (User requirement)
-        conn = sqlite3.connect(path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-        tables = [row[0] for row in cursor.fetchall()]
-        for table in tables:
-            cursor.execute(f"PRAGMA table_info({table})")
-            if not any(row[5] > 0 for row in cursor.fetchall()):
-                console.print(f"[yellow]Warning: Table '{table}' has no primary key. Falling back to rowid.[/yellow]")
-        conn.close()
-
-        # 2. Extract snapshots
+        # 1. Extract snapshots
+        # (Primary key check and skipping happens inside dump_data)
         schema = extract_schema(path)
         data = dump_data(path)
         
@@ -138,7 +128,32 @@ def log(oneline):
         console.print(f"[red]Log failed: {e}[/red]")
 
 def resolve_hash(short_hash, repo_path):
-    """Resolves a short hash to a full hash from the commit store."""
+    """Resolves a short hash or HEAD~n to a full hash from the commit store."""
+    if short_hash.upper().startswith("HEAD"):
+        head = load_commit(repo_path)
+        if not head: return short_hash
+        
+        if "~" in short_hash or "^" in short_hash:
+            parts = short_hash.replace("^", "~").split("~")
+            try:
+                steps = int(parts[1]) if len(parts) > 1 and parts[1] else 1
+            except ValueError:
+                steps = 1
+            curr = head
+            for _ in range(steps):
+                if curr.parent_hash:
+                    gitdb_dir = os.path.join(os.path.dirname(os.path.abspath(repo_path)), ".gitdb")
+                    parent_path = os.path.join(gitdb_dir, "commits", f"{curr.parent_hash}.json")
+                    if os.path.exists(parent_path):
+                        with open(parent_path, "r") as f:
+                            curr = Commit.from_json(f.read())
+                    else:
+                        break
+                else:
+                    break
+            return curr.hash
+        return head.hash
+
     gitdb_dir = os.path.join(os.path.dirname(os.path.abspath(repo_path)), ".gitdb")
     commits_dir = os.path.join(gitdb_dir, "commits")
     if not os.path.exists(commits_dir):
@@ -168,7 +183,7 @@ def diff(hash1, hash2, schema_only, data_only):
                 return
             h2 = head.hash
             
-        s_diff, d_diff = gitdb_diff(h1, h2, path)
+        gitdb_diff(h1, h2, path, schema_only=schema_only, data_only=data_only)
     except Exception as e:
         console.print(f"[red]Diff failed: {e}[/red]")
 

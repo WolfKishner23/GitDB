@@ -54,22 +54,21 @@ def dump_data(db_path):
     db_dump = {}
     for table in tables:
         pks = get_primary_keys(cursor, table)
+        if not pks:
+            print(f"Warning: Table '{table}' has no primary key. Skipping.")
+            continue
+            
         cursor.execute(f"SELECT * FROM {table}")
         rows = cursor.fetchall()
         
         table_data = {}
         for row in rows:
             row_dict = dict(row)
-            if pks:
-                # Use a single value if one PK, otherwise a tuple-like string
-                if len(pks) == 1:
-                    key = str(row_dict[pks[0]])
-                else:
-                    key = "|".join(str(row_dict[pk]) for pk in pks)
+            # Use a single value if one PK, otherwise a tuple-like string
+            if len(pks) == 1:
+                key = str(row_dict[pks[0]])
             else:
-                # Fallback to rowid if no PK defined
-                cursor.execute(f"SELECT rowid FROM {table} WHERE " + " AND ".join([f"{k}=?" for k in row_dict.keys()]), list(row_dict.values()))
-                key = str(cursor.fetchone()[0])
+                key = "|".join(str(row_dict[pk]) for pk in pks)
             
             table_data[key] = row_dict
         

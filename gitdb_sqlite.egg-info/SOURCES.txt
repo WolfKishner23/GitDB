@@ -1,0 +1,11 @@
+api.py
+diff_engine.py
+gitdb.py
+setup.py
+snapshot_engine.py
+gitdb_sqlite.egg-info/PKG-INFO
+gitdb_sqlite.egg-info/SOURCES.txt
+gitdb_sqlite.egg-info/dependency_links.txt
+gitdb_sqlite.egg-info/entry_points.txt
+gitdb_sqlite.egg-info/requires.txt
+gitdb_sqlite.egg-info/top_level.txt
