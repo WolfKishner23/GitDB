@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+body {
+  @apply bg-[#0b0f19] text-slate-100 antialiased;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(234, 179, 8, 0.05) 0px, transparent 50%);
+}
+
+#root {
+    @apply min-h-screen flex flex-col;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

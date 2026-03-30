@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+
+# Node/React
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# GitDB Metadata & Test DBs
+.gitdb/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Artifacts/Temp
+tmp/
+.temp/
+verify_cli.py
