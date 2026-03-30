@@ -201,16 +201,58 @@ def checkout(target_hash):
 
 @cli.command()
 def status():
-    """Show the current HEAD commit."""
+    """Show the current HEAD commit and uncommitted changes."""
     try:
         path = get_db_path(None)
-        commit = load_commit(path)
-        if commit:
-            console.print(f"On branch [bold blue]main[/bold blue]")
-            console.print(f"Current HEAD: [bold yellow]{commit.hash}[/bold yellow]")
-            console.print(f"Message: {commit.message}")
-        else:
+        head = load_commit(path)
+        
+        if not head:
             console.print("No commits yet. Use 'gitdb commit -m \"msg\"' to create one.")
+            return
+
+        console.print(f"On branch [bold blue]main[/bold blue]")
+        console.print(f"Current HEAD: [bold yellow]{head.hash[:8]}[/bold yellow] ({head.message})")
+
+        # Detect changes
+        from diff_engine import diff_schema, diff_data
+        
+        current_schema = extract_schema(path)
+        current_data = dump_data(path)
+        
+        s_cats = diff_schema(head.schema_snapshot, current_schema)
+        
+        # Schema changes summary
+        schema_changes = []
+        for table in s_cats["DROP"]:
+            schema_changes.append(f"[red]- {table.replace(';', '')}[/red]")
+        for table in s_cats["CREATE"]:
+            # Extract table name from CREATE statement
+            name_part = table.split("(")[0].replace("CREATE TABLE", "").strip()
+            schema_changes.append(f"[green]+ {name_part}[/green]")
+        
+        # Data changes summary
+        recreated = set()
+        for drop_stmt in s_cats["DROP"]:
+            recreated.add(drop_stmt.replace("DROP TABLE ", "").replace(";", "").strip())
+        
+        d_cats = diff_data(json.loads(head.data_snapshot), current_data, recreated)
+        
+        data_count = sum(len(v) for v in d_cats.values())
+        
+        if not schema_changes and data_count == 0:
+            console.print("[green]nothing to commit, working tree clean[/green]")
+        else:
+            console.print("\n[bold]Uncommitted changes detected:[/bold]")
+            if schema_changes:
+                console.print(f"  [yellow]Schema mutations:[/yellow]")
+                for sc in schema_changes:
+                    console.print(f"    {sc}")
+            
+            if data_count > 0:
+                console.print(f"  [yellow]Data mutations:[/yellow]")
+                for cat, ops in d_cats.items():
+                    if ops:
+                        console.print(f"    {cat.lower()}: {len(ops)} rows")
     except Exception as e:
         console.print(f"[red]Status failed: {e}[/red]")
 
